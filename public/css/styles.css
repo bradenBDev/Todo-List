@@ -18,9 +18,15 @@ h1 {
   box-shadow: 5px 5px 15px -5px rgba(0, 0, 0, 0.3);
 }
 
-#heading {
+.heading {
   background-color: #A683E3;
   text-align: center;
+}
+
+.about-text {
+  text-align: center;
+  max-width: 1000px;
+  line-height: 2.5rem;
 }
 
 .item {

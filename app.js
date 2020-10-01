@@ -102,7 +102,7 @@ app.route("/")
 // Lodash capitalizes the list title so that it can be accessed regardless
 // of the capitalization.
 
-app.get("/:requestedListName", function (req, res) {
+app.get("/list/:requestedListName", function (req, res) {
   const requestedListName = _.capitalize(req.params.requestedListName);
 
   List.findOne({name: requestedListName}, function (err, result) {
