@@ -91,7 +91,9 @@ app.route("/")
       List.findOne({name: listName}, function (err, foundList) {
         foundList.items.push(item);
         foundList.save();
-        res.redirect("/" + listName);
+        // Redirect to lists/about page if the user added an item to the
+        // "About" list.
+        res.redirect("list/" + listName);
       });
     }
 
@@ -117,8 +119,7 @@ app.get("/list/:requestedListName", function (req, res) {
         items: defaultItems
       });
 
-      list.save();
-      res.redirect("/" + requestedListName);
+      list.save(function (err) {res.redirect("/" + requestedListName);})
     }
   });
 
@@ -137,8 +138,9 @@ app.post("/delete", function (req, res) {
 
   } else {
     // Use $pull to remove the item from the list
-    List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: checkedItemId}}}, function (err, results){});
-    res.redirect("/" + listName);
+    List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: checkedItemId}}}, function (err, results){
+      res.redirect("list/" + listName);
+    });
   }
 
 });
