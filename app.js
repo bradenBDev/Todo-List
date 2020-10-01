@@ -1,8 +1,11 @@
+require("dotenv").config();
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const _ = require("lodash");
 
+
+// Initialize Express
 const app = express();
 
 app.set('view engine', 'ejs');
@@ -10,26 +13,30 @@ app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
 
-mongoose.connect("mongodb+srv://admin-braden:meanaboutit@cluster0.ftn1z.mongodb.net/todolistDB?retryWrites=true&w=majority", {useNewUrlParser: true, useUnifiedTopology: true});
+// Initialize Mongoose
+mongoose.connect(process.env.MONGO_DB_URL, {useNewUrlParser: true, useUnifiedTopology: true});
 
+// Schema for items with one field for the note itself.
 const itemsSchema = new mongoose.Schema({
   name: String
 });
 
 const Item = mongoose.model("Item", itemsSchema);
 
-const item1 = new Item({
+// List of default items to display in case the list is empty.
+const defaultItems = [
+  new Item({
   name: "Welcome to your list."
-});
-const item2 = new Item({
+}),
+  new Item({
   name: "Click the plus button to add some items."
-});
-const item3 = new Item({
+}),
+  new Item({
   name: "Check items off to remove them."
-});
+})
+];
 
-const defaultItems = [item1, item2, item3];
-
+// Schema for custom lists, which can be accessed by going to /<listName>.
 const listSchema = new mongoose.Schema({
   name: String,
   items: [itemsSchema]
@@ -38,26 +45,62 @@ const listSchema = new mongoose.Schema({
 const List = mongoose.model("List", listSchema);
 
 
-app.get("/", function(req, res) {
+// Home route, returning all list items or adding one to the database.
 
-  Item.find({}, function (err, foundItems) {
+app.route("/")
 
-    if (foundItems.length === 0) {
+  .get(function(req, res) {
 
-      Item.insertMany(defaultItems, function (err) {
-        if (!err) {
-          console.log("Added default items.");
-        }
-      });
+    Item.find({}, function (err, foundItems) {
 
-      res.redirect("/")
+      // If no items were found in the database, add the defaultItems list.
+      if (foundItems.length === 0) {
 
+        Item.insertMany(defaultItems, function (err) {
+          if (!err) {
+            console.log("Added default items.");
+          }
+        });
+
+        res.redirect("/")
+
+      } else {
+        res.render("list", {listTitle: "Today", newListItems: foundItems});
+      }
+    });
+
+  })
+
+  .post(function(req, res){
+
+    const itemName = req.body.newItem;
+    const listName = req.body.list;
+
+    const item = new Item({
+      name: itemName
+    });
+
+    // If it's the default list, simply save to the database.
+    if (listName === "Today") {
+      item.save();
+      res.redirect("/");
+
+    // If it's a custom list, find the list name and push the list content
+    // to it, then save it.
     } else {
-      res.render("list", {listTitle: "Today", newListItems: foundItems});
+      List.findOne({name: listName}, function (err, foundList) {
+        foundList.items.push(item);
+        foundList.save();
+        res.redirect("/" + listName);
+      });
     }
+
   });
 
-});
+
+// Route for custom lists. If the list doesn't exist, it'll create it.
+// Lodash capitalizes the list title so that it can be accessed regardless
+// of the capitalization.
 
 app.get("/:requestedListName", function (req, res) {
   const requestedListName = _.capitalize(req.params.requestedListName);
@@ -81,28 +124,8 @@ app.get("/:requestedListName", function (req, res) {
 
 });
 
-app.post("/", function(req, res){
 
-  const itemName = req.body.newItem;
-  const listName = req.body.list;
-
-  const item = new Item({
-    name: itemName
-  });
-
-  if (listName === "Today") {
-    item.save();
-    res.redirect("/");
-
-  } else {
-    List.findOne({name: listName}, function (err, foundList) {
-      foundList.items.push(item);
-      foundList.save();
-      res.redirect("/" + listName);
-    });
-  }
-
-});
+// Route for deleting a note
 
 app.post("/delete", function (req, res) {
   const checkedItemId = req.body.checkbox;
@@ -113,15 +136,22 @@ app.post("/delete", function (req, res) {
     res.redirect("/");
 
   } else {
+    // Use $pull to remove the item from the list
     List.findOneAndUpdate({name: listName}, {$pull: {items: {_id: checkedItemId}}}, function (err, results){});
     res.redirect("/" + listName);
   }
 
 });
 
+
+// Returns the about page, about.ejs
+
 app.get("/about", function(req, res){
   res.render("about");
 });
+
+
+// Spin up the server
 
 app.listen(process.env.PORT || 3000, function() {
   console.log("Server started.");
