@@ -1,0 +1,16 @@
+<%- include("header") -%>
+
+<div class="box heading">
+    <h1>All Lists</h1>
+</div>
+
+<div class="box">
+
+    <%newListItems.forEach(function(item) {%>
+            <div class="item center">
+                <a style="margin: auto; text-decoration: underline; color: #A683E3;" href="/list/<%=item.name%>"><p><%= item.name %></p></a>
+            </div>
+    <%})%>
+</div>
+
+<%- include("footer") -%>

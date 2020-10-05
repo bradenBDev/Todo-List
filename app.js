@@ -32,7 +32,7 @@ const defaultItems = [
   name: "Click the plus button to add some items."
 }),
   new Item({
-  name: "Check items off to remove them."
+  name: "Navigate to /list/name to create a custom list."
 })
 ];
 
@@ -100,6 +100,13 @@ app.route("/")
   });
 
 
+app.get("/view-lists", function (req, res) {
+  List.find({}, function (err, foundLists) {
+    res.render("viewAllLists", {newListItems: foundLists})
+  });
+});
+
+
 // Route for custom lists. If the list doesn't exist, it'll create it.
 // Lodash capitalizes the list title so that it can be accessed regardless
 // of the capitalization.
@@ -119,7 +126,7 @@ app.get("/list/:requestedListName", function (req, res) {
         items: defaultItems
       });
 
-      list.save(function (err) {res.redirect("/" + requestedListName);})
+      list.save(function (err) {res.redirect("/list/" + requestedListName);})
     }
   });
 
@@ -155,6 +162,6 @@ app.get("/about", function(req, res){
 
 // Spin up the server
 
-app.listen(process.env.PORT || 3000, function() {
+app.listen(process.env.PORT || 9000, function() {
   console.log("Server started.");
 });
